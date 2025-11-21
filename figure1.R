@@ -85,34 +85,8 @@ panel_a <-
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
   coord_cartesian(xlim = c(0, 33000))
 
-# Panel B - Mitochondrial genes subset (half width)
+# Panel B - Metabolic disorder genes (half width)
 panel_b <-
-  ggplot() +
-  geom_point(
-    data = gene2pubmed_mito,
-    mapping = aes(x = fct_reorder(approved_symbol, n), y = n),
-    alpha = 0.5,
-    color = "darkred"
-  ) +
-  geom_text_repel(
-    data = subset(gene2pubmed_mito, n > 500),
-    mapping = aes(
-      x = fct_reorder(approved_symbol, n),
-      y = n,
-      label = approved_symbol
-    ),
-    size = 3
-  ) +
-  labs(
-    x = "Mitochondrial Genes",
-    y = "Publications"
-  ) +
-  theme_cowplot() +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-  coord_cartesian(xlim = c(0, 1200))
-
-# Panel C - Metabolic disorder genes (half width)
-panel_c <-
   ggplot() +
   geom_point(
     data = gene2pubmed_metabolic,
@@ -137,6 +111,32 @@ panel_c <-
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
   coord_cartesian(xlim = c(0, 1800))
 
+# Panel C - Mitochondrial genes subset (half width)
+panel_c <-
+  ggplot() +
+  geom_point(
+    data = gene2pubmed_mito,
+    mapping = aes(x = fct_reorder(approved_symbol, n), y = n),
+    alpha = 0.5,
+    color = "darkred"
+  ) +
+  geom_text_repel(
+    data = subset(gene2pubmed_mito, n > 500),
+    mapping = aes(
+      x = fct_reorder(approved_symbol, n),
+      y = n,
+      label = approved_symbol
+    ),
+    size = 3
+  ) +
+  labs(
+    x = "Mitochondrial Genes",
+    y = "Publications"
+  ) +
+  theme_cowplot() +
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  coord_cartesian(xlim = c(0, 1200))
+
 # Publication binning analysis
 # Create function to bin publication counts
 bin_publications <- function(data, dataset_name) {
@@ -152,19 +152,20 @@ bin_publications <- function(data, dataset_name) {
       ),
       pub_bin = factor(pub_bin, levels = c("0", "1-10", "11-100", "101-1000", "1001+"))
     ) |>
-    count(pub_bin, .drop = FALSE) |>
+    count(pub_bin, .drop = FALSE, name = "count") |>
     mutate(dataset = dataset_name)
 }
 
 # Apply binning to all three datasets
 pub_bins <- bind_rows(
   bin_publications(gene2pubmed, "All Human Genes"),
-  bin_publications(gene2pubmed_mito, "Mitochondrial Genes"),
-  bin_publications(gene2pubmed_metabolic, "Metabolic Disorder Genes")
-)
+  bin_publications(gene2pubmed_metabolic, "Metabolic Disorder Genes"),
+  bin_publications(gene2pubmed_mito, "Mitochondrial Genes")
+) |>
+  mutate(dataset = factor(dataset, levels = c("All Human Genes", "Metabolic Disorder Genes", "Mitochondrial Genes")))
 
 # Panel D - Publication distribution bins (full width)
-panel_d <- ggplot(pub_bins, aes(x = pub_bin, y = n, fill = dataset)) +
+panel_d <- ggplot(pub_bins, aes(x = pub_bin, y = count, fill = dataset)) +
   geom_col() +
   facet_wrap(~dataset, scales = "free_y") +
   labs(
@@ -174,7 +175,8 @@ panel_d <- ggplot(pub_bins, aes(x = pub_bin, y = n, fill = dataset)) +
   theme_cowplot() +
   theme(
     legend.position = "none",
-    axis.text.x = element_text(angle = 45, hjust = 1)
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    strip.background = element_rect(fill = "white", color = "black")
   ) +
   scale_fill_manual(values = c(
     "All Human Genes" = "grey50",
