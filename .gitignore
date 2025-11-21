@@ -1,0 +1,10 @@
+# Log files
+log/
+
+# R history and environment
+.Rhistory
+.RData
+.Rproj.user
+
+# Generated PDFs
+*.pdf
