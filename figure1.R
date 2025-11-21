@@ -5,21 +5,30 @@ library(ggrepel)
 library(patchwork)
 library(readxl)
 
-gene2pubmedurl <- "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2pubmed.gz"
-gene2pubmed_raw <- read_tsv(gene2pubmedurl, col_names = TRUE) |>
-  janitor::clean_names()
+# Load gene2pubmed data (or download if not available)
+if (file.exists(here::here("data", "gene2pubmed.RData"))) {
+  load(here::here("data", "gene2pubmed.RData"))
+} else {
+  # Download and process data (only runs if saved data doesn't exist)
+  gene2pubmedurl <- "ftp://ftp.ncbi.nlm.nih.gov/gene/DATA/gene2pubmed.gz"
+  gene2pubmed_raw <- read_tsv(gene2pubmedurl, col_names = TRUE) |>
+    janitor::clean_names()
 
-#read data from create_gene_summary.R
-#file that has gene ids -> gene names
-load(here::here("data", "gene_summary.RData"))
+  # Read data from create_gene_summary.R
+  # File that has gene ids -> gene names
+  load(here::here("data", "gene_summary.RData"))
 
-gene2pubmed <- gene2pubmed_raw |>
-  dplyr::filter(number_tax_id == 9606) |> #only the rows corresponding to humans (#tax_id = 9606)
-  group_by(gene_id) |>
-  count(sort = TRUE) |>
-  left_join(gene_summary, by = c("gene_id" = "ncbi_gene_id")) |>
-  select(gene_id, approved_symbol, n, approved_name) |>
-  filter(!is.na(approved_symbol))
+  gene2pubmed <- gene2pubmed_raw |>
+    dplyr::filter(number_tax_id == 9606) |> #only the rows corresponding to humans (#tax_id = 9606)
+    group_by(gene_id) |>
+    count(sort = TRUE) |>
+    left_join(gene_summary, by = c("gene_id" = "ncbi_gene_id")) |>
+    select(gene_id, approved_symbol, n, approved_name) |>
+    filter(!is.na(approved_symbol))
+
+  # Save for future use
+  save(gene2pubmed, file = here::here("data", "gene2pubmed.RData"))
+}
 
 # Read mitochondrial genes from MitoCarta
 mitocarta <- read_excel(
